@@ -13,14 +13,14 @@ const PORT = process.env.PORT || 3000;
 
 // Inicializa servidor
 app.listen(PORT, () =>
-  console.log(`✅ Servidor rodando em http://localhost:${PORT}`)
+  console.log(` Servidor rodando em http://localhost:${PORT}`)
 );
 
 // Conexão com o MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Conectado ao MongoDB"))
-  .catch((err) => console.error("❌ MongoDB erro de conexão:", err));
+  .then(() => console.log(" Conectado ao MongoDB"))
+  .catch((err) => console.error(" MongoDB erro de conexão:", err));
 
 // Teste de status da API
 app.get("/test", async (req, res) => {
@@ -38,13 +38,13 @@ app.get("/test", async (req, res) => {
 // Criar novo item
 app.post("/diretorio", async (req, res) => {
   try {
-    console.log("📝 Tentando criar item no diretório...");
+    console.log(" Tentando criar item no diretório...");
     const item = new Diretorio(req.body);
     const respMongo = await item.save();
-    console.log("✅ Item criado com sucesso:", respMongo);
+    console.log(" Item criado com sucesso:", respMongo);
     res.status(201).json(respMongo);
   } catch (erro) {
-    console.log("❌ Erro ao criar item:", erro.message);
+    console.log(" Erro ao criar item:", erro.message);
     res.status(400).json({ erro: erro.message });
   }
 });
@@ -55,7 +55,7 @@ app.get("/diretorio", async (req, res) => {
     const itens = await Diretorio.find();
     res.status(200).json(itens);
   } catch (erro) {
-    console.log("❌ Erro ao listar itens:", erro.message);
+    console.log("Erro ao listar itens:", erro.message);
     res.status(500).json({ erro: erro.message });
   }
 });
@@ -67,12 +67,12 @@ app.get("/diretorio/:id", async (req, res) => {
     if (!item) return res.status(404).json({ erro: "Item não encontrado" });
     res.status(200).json(item);
   } catch (erro) {
-    console.log("❌ Erro ao buscar item:", erro.message);
+    console.log("Erro ao buscar item:", erro.message);
     res.status(500).json({ erro: erro.message });
   }
 });
 
-// 🗑️ Remover item pelo ID
+//  Remover item pelo ID
 app.delete("/diretorio/:id", async (req, res) => {
   try {
     const item = await Diretorio.findByIdAndDelete(req.params.id);
@@ -81,13 +81,13 @@ app.delete("/diretorio/:id", async (req, res) => {
         .status(404)
         .json({ erro: "Item não encontrado para exclusão" });
 
-    console.log("🗑️ Item removido com sucesso:", item._id);
+    console.log("Item removido com sucesso:", item._id);
     res.status(200).json({
       message: "Item removido com sucesso",
       item,
     });
   } catch (erro) {
-    console.log("❌ Erro ao remover item:", erro.message);
+    console.log("Erro ao remover item:", erro.message);
     res.status(500).json({ erro: erro.message });
   }
 });

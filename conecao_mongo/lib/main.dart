@@ -1,105 +1,92 @@
-import 'dart:convert';  //Converte Json em obj Dart 
-import 'package:flutter/material.dart';  //Widgets de design
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(title: 'Diretório MongoDB', home: HomePage());
-  }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-  @override
-  _HomePageState createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  List<dynamic> items = [];
-  bool loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchItems();
-  }
-
-  Future<void> fetchItems() async { //Pegar itens
-    try {
-      final response = await http.get( // mexer no caminho depois
-        Uri.parse('http://192.168.0.3:3000/diretorio'),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          items = jsonDecode(response.body); 
-          loading = false; //Verificar qunado add img
-        });
-      } else {
-        throw Exception('Erro ao carregar itens: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Erro: $e');
-      setState(() => loading = false);
-    }
-  }
+  // URL do seu backend Node.js
+  final String apiUrl = 'http://localhost:3000/diretorio';
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Diretório MongoDB')),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: items.length,
+    return MaterialApp(
+      title: 'Diretório MongoDB',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: Scaffold(
+        appBar: AppBar(title: Text('Itens do Diretório')),
+        body: FutureBuilder<List<Diretorio>>(
+          future: fetchDiretorios(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Erro: ${snapshot.error}'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('Nenhum item encontrado'));
+            }
+
+            final itens = snapshot.data!;
+            return ListView.builder(
+              itemCount: itens.length,
               itemBuilder: (context, index) {
-                final item = items[index];
+                final item = itens[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['titulo'] ?? 'Sem título',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(item['descricao'] ?? 'Sem descrição'),
-                        if (item['listIMG'] != null &&
-                            item['listIMG'].isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Imagens:',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          ...List<Widget>.from(
-                            item['listIMG'].map<Widget>(
-                              (img) => Text('- $img'),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                  margin: EdgeInsets.all(8),
+                  child: ListTile(
+                    title: Text(item.titulo),
+                    subtitle: Text(item.descricao),
+                    trailing: item.listIMG.isNotEmpty
+                        ? Image.network(
+                            item.listIMG.first,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
                 );
               },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: fetchItems,
-        child: const Icon(Icons.refresh),
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Future<List<Diretorio>> fetchDiretorios() async {
+    final response = await http.get(Uri.parse(apiUrl));
+
+    if (response.statusCode == 200) {
+      List jsonData = json.decode(response.body);
+      return jsonData.map((item) => Diretorio.fromJson(item)).toList();
+    } else {
+      throw Exception('Falha ao carregar diretórios');
+    }
+  }
+}
+
+class Diretorio {
+  final String id;
+  final String titulo;
+  final String descricao;
+  final List<String> listIMG;
+
+  Diretorio({
+    required this.id,
+    required this.titulo,
+    required this.descricao,
+    required this.listIMG,
+  });
+
+  factory Diretorio.fromJson(Map<String, dynamic> json) {
+    return Diretorio(
+      id: json['_id'],
+      titulo: json['titulo'],
+      descricao: json['descricao'],
+      listIMG: List<String>.from(json['listIMG'] ?? []),
     );
   }
 }
